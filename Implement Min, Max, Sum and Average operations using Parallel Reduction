@@ -10,7 +10,7 @@ import numpy as np
 arr = np.array([10, 20, 5, 8, 15, 3, 12])
 
 
-# Parallel Reduction Function
+# Parallel Reduction Function ( the main logic )
 def parallel_reduce(data, operation):
     data = data.copy()
     
