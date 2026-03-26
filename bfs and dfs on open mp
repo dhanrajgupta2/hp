@@ -1,0 +1,157 @@
+// Exp 1 Design and implement Parallel Breadth First Search and Depth First Search based on existing
+// algorithms using OpenMP. Use a Tree or an undirected graph for BFS and DFS
+
+// solution 
+
+
+
+// Parallel BFS using OpenMP (C Code)
+
+#include <stdio.h>
+#include <omp.h>
+
+int visited[100], q[100];
+
+int main() {
+    int n = 5, graph[5][5] = {
+        {0,1,1,0,0},
+        {1,0,1,1,0},
+        {1,1,0,0,1},
+        {0,1,0,0,1},
+        {0,0,1,1,0}
+    };
+
+    int front = 0, rear = 0;
+    q[rear++] = 0;
+    visited[0] = 1;
+
+    while (front < rear) {
+        int node = q[front++];
+        printf("%d ", node);
+
+        #pragma omp parallel for
+        for (int i = 0; i < n; i++) {
+            if (graph[node][i] && !visited[i]) {
+                visited[i] = 1;
+                #pragma omp critical
+                q[rear++] = i;
+            }
+        }
+    }
+}
+
+
+// or  <=========================================================================>
+
+#include <stdio.h>
+#include <omp.h>
+
+#define MAX 100
+
+int visited[MAX];
+
+void parallel_bfs(int graph[MAX][MAX], int n, int start) {
+    int queue[MAX], front = 0, rear = 0;
+
+    for(int i = 0; i < n; i++)
+        visited[i] = 0;
+
+    visited[start] = 1;
+    queue[rear++] = start;
+
+    while(front < rear) {
+        int current = queue[front++];
+        printf("%d ", current);
+
+        #pragma omp parallel for
+        for(int i = 0; i < n; i++) {
+            if(graph[current][i] && !visited[i]) {
+                #pragma omp critical
+                {
+                    if(!visited[i]) {
+                        visited[i] = 1;
+                        queue[rear++] = i;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// <=========================================================================>
+
+
+// Parallel DFS using OpenMP (C Code)
+
+#include <stdio.h>
+#include <omp.h>
+
+int visited[100];
+
+void dfs(int node, int n, int graph[n][n]) {
+    printf("%d ", node);
+    visited[node] = 1;
+
+    #pragma omp parallel for
+    for (int i = 0; i < n; i++) {
+        if (graph[node][i] && !visited[i]) {
+            dfs(i, n, graph);
+        }
+    }
+}
+
+int main() {
+    int n = 5, graph[5][5] = {
+        {0,1,1,0,0},
+        {1,0,1,1,0},
+        {1,1,0,0,1},
+        {0,1,0,0,1},
+        {0,0,1,1,0}
+    };
+
+    dfs(0, n, graph);
+}
+
+// or  <=========================================================================>
+
+#include <stdio.h>
+#include <omp.h>
+
+#define MAX 100
+
+int visited[MAX];
+
+void dfs_util(int graph[MAX][MAX], int n, int node) {
+    visited[node] = 1;
+    printf("%d ", node);
+
+    #pragma omp parallel for
+    for(int i = 0; i < n; i++) {
+        if(graph[node][i] && !visited[i]) {
+            #pragma omp critical
+            {
+                if(!visited[i]) {
+                    dfs_util(graph, n, i);
+                }
+            }
+        }
+    }
+}
+
+void parallel_dfs(int graph[MAX][MAX], int n, int start) {
+    for(int i = 0; i < n; i++)
+        visited[i] = 0;
+
+    dfs_util(graph, n, start);
+}
+
+//  <=========================================================================>
+
+
+
+
+
+
+
+
+
