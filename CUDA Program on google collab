@@ -1,0 +1,154 @@
+# Write a CUDA Program for :
+# 1. Addition of two large vectors
+# 2. Matrix Multiplication using CUDA C
+
+#solution 
+
+# 1. Addition of two large vectors
+
+%%writefile vector_add.cu
+#include <stdio.h>
+#include <cuda_runtime.h>
+
+__global__ void vectorAdd(int *A, int *B, int *C, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < n)
+    {
+        C[i] = A[i] + B[i];
+    }
+}
+
+int main()
+{
+    int n = 1000;
+    int size = n * sizeof(int);
+
+    int A[n], B[n], C[n];
+
+    for (int i = 0; i < n; i++)
+    {
+        A[i] = i;
+        B[i] = i * 2;
+    }
+
+    int *d_A, *d_B, *d_C;
+
+    cudaMalloc((void **)&d_A, size);
+    cudaMalloc((void **)&d_B, size);
+    cudaMalloc((void **)&d_C, size);
+
+    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
+
+    vectorAdd<<<(n + 255) / 256, 256>>>(d_A, d_B, d_C, n);
+
+    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
+
+    for (int i = 0; i < 10; i++)
+        printf("%d ", C[i]);
+
+    printf("\n");
+
+    cudaFree(d_A);
+    cudaFree(d_B);
+    cudaFree(d_C);
+
+    return 0;
+}
+
+
+
+# to run this one make new cells and type these commands 
+
+!nvcc vector_add.cu -o vector_add
+!nvcc vector_add.cu -o vector_add
+
+<================================================================================================================================>
+
+ # Matrix Multiplication using CUDA C 
+
+%%writefile matrix_mul.cu
+#include <stdio.h>
+#include <cuda_runtime.h>
+
+__global__ void matrixMul(int *A, int *B, int *C, int N)
+{
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < N && col < N)
+    {
+        int sum = 0;
+
+        for (int k = 0; k < N; k++)
+        {
+            sum += A[row * N + k] * B[k * N + col];
+        }
+
+        C[row * N + col] = sum;
+    }
+}
+
+int main()
+{
+    int N = 3;
+    int size = N * N * sizeof(int);
+
+    int A[] = {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9
+    };
+
+    int B[] = {
+        9, 8, 7,
+        6, 5, 4,
+        3, 2, 1
+    };
+
+    int C[9];
+
+    int *d_A, *d_B, *d_C;
+
+    cudaMalloc((void**)&d_A, size);
+    cudaMalloc((void**)&d_B, size);
+    cudaMalloc((void**)&d_C, size);
+
+    cudaMemcpy(d_A, A, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_B, B, size, cudaMemcpyHostToDevice);
+
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((N + 15) / 16, (N + 15) / 16);
+
+    matrixMul<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
+
+    cudaMemcpy(C, d_C, size, cudaMemcpyDeviceToHost);
+
+    printf("Result Matrix:\n");
+
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            printf("%d ", C[i * N + j]);
+        }
+        printf("\n");
+    }
+
+    cudaFree(d_A);
+    cudaFree(d_B);
+    cudaFree(d_C);
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
